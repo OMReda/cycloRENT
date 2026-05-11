@@ -1,0 +1,132 @@
+{% extends 'location/base.html' %}
+{% block title %}Modifier Locations{% endblock %}
+{% block page_title %}Modifier Locations{% endblock %}
+{% block page_actions %}{% endblock %}
+{% block extra_head %}<style>.page-header { justify-content: center; }</style>{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i data-lucide="clipboard-list" class="me-2 text-primary"></i>{{ action }}
+            </div>
+            <div class="card-body p-4">
+                <form method="post" id="locationForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <!-- Vélo -->
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.velo.label }} <span class="text-danger">*</span></label>
+                            {{ form.velo }}
+                            {% if form.velo.errors %}<div class="text-danger small mt-1">{{ form.velo.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Client -->
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.client.label }} <span class="text-danger">*</span></label>
+                            {{ form.client }}
+                            {% if form.client.errors %}<div class="text-danger small mt-1">{{ form.client.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <!-- Durée + Unité -->
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.duree.label }} <span class="text-danger">*</span></label>
+                            {{ form.duree }}
+                            {% if form.duree.errors %}<div class="text-danger small mt-1">{{ form.duree.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.duree_unite.label }}</label>
+                            {{ form.duree_unite }}
+                        </div>
+
+                        <!-- Prix calculé automatiquement -->
+                        <div class="col-md-4">
+                            <label class="form-label">Prix estimé</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i data-lucide="euro"></i></span>
+                                <input type="text" id="prixEstime" class="form-control fw-bold text-success" readonly placeholder="Calcul auto...">
+                            </div>
+                            <div class="text-muted" style="font-size:.72rem;margin-top:4px" id="prixDetail"></div>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.date_location.label }}</label>
+                            {{ form.date_location }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.date_retour.label }}</label>
+                            {{ form.date_retour }}
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.statut.label }}</label>
+                            {{ form.statut }}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="col-12">
+                            <label class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i data-lucide="save" class="me-2"></i>Enregistrer
+                        </button>
+                        <a href="{% url 'location_list' %}" class="btn btn-outline-secondary">
+                            <i data-lucide="x" class="me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updatePrix() {
+    const veloId = document.getElementById('id_velo').value;
+    const duree = document.getElementById('id_duree').value;
+    const unite = document.getElementById('id_duree_unite').value;
+
+    if (!veloId || !duree) {
+        document.getElementById('prixEstime').value = '';
+        document.getElementById('prixDetail').textContent = '';
+        return;
+    }
+
+    fetch(`/api/calcul-prix/?velo_id=${veloId}&duree=${duree}&unite=${unite}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('prixEstime').value = data.prix.toFixed(2) + ' €';
+            const h = unite === 'jours' ? duree * 8 : duree;
+            if (unite === 'jours') {
+                document.getElementById('prixDetail').textContent =
+                    `${data.prix_heure} €/h × ${h}h (${duree} jours × 8h) = ${data.prix.toFixed(2)} €`;
+            } else {
+                document.getElementById('prixDetail').textContent =
+                    `${data.prix_heure} €/h × ${duree}h = ${data.prix.toFixed(2)} €`;
+            }
+        });
+}
+
+document.getElementById('id_velo').addEventListener('change', updatePrix);
+document.getElementById('id_duree').addEventListener('input', updatePrix);
+document.getElementById('id_duree_unite').addEventListener('change', updatePrix);
+
+// Block e, E, +, - from the duration field (decimals allowed, min 1)
+document.getElementById('id_duree').addEventListener('keydown', function(e) {
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+});
+
+// Init si édition
+updatePrix();
+</script>
+{% endblock %}

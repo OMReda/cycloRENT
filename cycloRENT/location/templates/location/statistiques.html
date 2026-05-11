@@ -1,0 +1,189 @@
+{% extends 'location/base.html' %}
+{% block title %}Statistiques{% endblock %}
+{% block page_title %}Statistiques & Revenus{% endblock %}
+
+{% block page_actions %}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- ── STATS GRID ── -->
+    <div class="row g-4 mb-5 pb-5 border-bottom border-dark border-2">
+        <div class="col-md-4">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">CA du mois en cours</div>
+            <div style="font-size: 4rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1.5px;">
+                {{ ca_month|floatformat:2 }} <span style="font-size: 2rem;">€</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">Locations archivées ce mois</div>
+            <div style="font-size: 4rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1.5px;">
+                {{ archived_month }}
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">Période actuelle</div>
+            <div style="font-size: 4rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1.5px; text-transform: capitalize;">
+                {{ today|date:"F Y" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── GRAPHIQUE CA 12 MOIS ── -->
+    <div class="mb-5 pb-5 border-bottom border-dark border-2">
+        <h3 class="mb-4" style="font-family:'Outfit', sans-serif; font-weight: 800;">Chiffre d'affaires mensuel — 12 derniers mois</h3>
+        <canvas id="monthChart" height="100"></canvas>
+    </div>
+
+    <div class="row g-5">
+        <!-- ── TOP 5 CLIENTS ── -->
+        <div class="col-lg-6">
+            <h3 class="mb-4" style="font-family:'Outfit', sans-serif; font-weight: 800;">Top 5 Clients</h3>
+            {% if top_clients %}
+            <div class="table-responsive">
+                <table class="table" style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">Rang</th>
+                            <th style="text-align:center;">Client</th>
+                            <th style="text-align:center;">Locations</th>
+                            <th style="text-align:center;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in top_clients %}
+                        <tr>
+                            <td class="fw-bold" style="font-family: 'Outfit', sans-serif; font-size: 1.5rem;">
+                                #{{ forloop.counter }}
+                            </td>
+                            <td>
+                                <a href="{% url 'client_detail' client.pk %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ client.prenom }} {{ client.nom }}
+                                </a>
+                            </td>
+                            <td>{{ client.nb_locations }}</td>
+                            <td class="fw-bold" style="font-family: 'Outfit', sans-serif; font-size: 1.25rem;">
+                                {{ client.total_depenses|floatformat:2 }} €
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>Aucune donnée disponible</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── RÉPARTITION TYPE + STATUTS ── -->
+        <div class="col-lg-6">
+            <h3 class="mb-4" style="font-family:'Outfit', sans-serif; font-weight: 800;">CA par type de vélo</h3>
+            {% for ts in type_stats %}
+            <div class="d-flex align-items-center justify-content-between border-bottom border-dark py-3 mb-2">
+                <div>
+                    <div class="fw-bold" style="text-transform: uppercase;">{{ ts.velo__type }}</div>
+                    <div class="text-muted" style="font-size: 0.8rem;">{{ ts.count }} location(s)</div>
+                </div>
+                <div style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">
+                    {{ ts.total|floatformat:2 }} €
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <p>Aucune donnée</p>
+            </div>
+            {% endfor %}
+
+            <h3 class="mb-4 mt-5" style="font-family:'Outfit', sans-serif; font-weight: 800;">Répartition par statut</h3>
+            <div style="max-width: 300px; margin: 0 auto;">
+                <canvas id="statutChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ months_labels|json_script:"months-labels" }}
+{{ months_data|json_script:"months-data" }}
+{{ statut_stats|json_script:"statut-data" }}
+<script>
+// Graphique mensuel
+new Chart(document.getElementById('monthChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+        labels: JSON.parse(document.getElementById('months-labels').textContent),
+        datasets: [{
+            label: 'CA (€)',
+            data: JSON.parse(document.getElementById('months-data').textContent),
+            backgroundColor: '#000000',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: { 
+                backgroundColor: '#000',
+                titleFont: { family: 'Outfit', size: 14 },
+                bodyFont: { family: 'Outfit', size: 16, weight: 'bold' },
+                padding: 12,
+                cornerRadius: 0,
+                boxPadding: 6,
+                callbacks: {
+                    labelColor: function(context) {
+                        return {
+                            borderColor: '#ffffff',
+                            backgroundColor: '#000000',
+                            borderWidth: 2
+                        };
+                    },
+                    label: c => `${c.parsed.y.toFixed(2)} €`
+                } 
+            }
+        },
+        scales: {
+            y: { 
+                beginAtZero: true, 
+                suggestedMax: 100,
+                ticks: { font: { family: 'Inter', weight: '600' } }, 
+                grid: { color: '#eaeaea', drawBorder: false } 
+            },
+            x: { 
+                ticks: { font: { family: 'Inter', weight: '600' } }, 
+                grid: { display: false } 
+            }
+        }
+    }
+});
+
+// Graphique statuts
+const statutData = JSON.parse(document.getElementById('statut-data').textContent);
+const labelMap = { 'en_cours': 'En cours', 'terminee': 'Terminée', 'annulee': 'Annulée' };
+const colorMap = { 'en_cours': '#000000', 'terminee': '#dddddd', 'annulee': '#ffffff' };
+
+if (statutData.length > 0) {
+    new Chart(document.getElementById('statutChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: statutData.map(d => labelMap[d.statut] || d.statut),
+            datasets: [{
+                data: statutData.map(d => d.count),
+                backgroundColor: statutData.map(d => colorMap[d.statut] || '#999'),
+                borderWidth: 2,
+                borderColor: '#000',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 14, weight: '600' }, color: '#000' } }
+            },
+            cutout: '0%'
+        }
+    });
+}
+</script>
+{% endblock %}

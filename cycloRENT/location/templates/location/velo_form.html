@@ -1,0 +1,67 @@
+{% extends 'location/base.html' %}
+{% block title %}{{ action }} un vélo{% endblock %}
+{% block page_title %}{{ action }} un vélo{% endblock %}
+{% block page_actions %}{% endblock %}
+{% block extra_head %}<style>.page-header { justify-content: center; }</style>{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <i data-lucide="bike" class="me-2 text-primary"></i>{{ action }}
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.numero_cadre.id_for_label }}">{{ form.numero_cadre.label }}</label>
+                            {{ form.numero_cadre }}
+                            {% if form.numero_cadre.errors %}<div class="text-danger small mt-1">{{ form.numero_cadre.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.modele.id_for_label }}">{{ form.modele.label }}</label>
+                            {{ form.modele }}
+                            {% if form.modele.errors %}<div class="text-danger small mt-1">{{ form.modele.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>
+                            {{ form.type }}
+                            {% if form.type.errors %}<div class="text-danger small mt-1">{{ form.type.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ form.prix_heure.id_for_label }}">{{ form.prix_heure.label }}</label>
+                            <div class="input-group">
+                                {{ form.prix_heure }}
+                                <span class="input-group-text">€/h</span>
+                            </div>
+                            {% if form.prix_heure.errors %}<div class="text-danger small mt-1">{{ form.prix_heure.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.disponible }}
+                                <label class="form-check-label" for="{{ form.disponible.id_for_label }}">{{ form.disponible.label }}</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i data-lucide="save" class="me-2"></i>Enregistrer
+                        </button>
+                        <a href="{% url 'velo_list' %}" class="btn btn-outline-secondary">
+                            <i data-lucide="x" class="me-2"></i>Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

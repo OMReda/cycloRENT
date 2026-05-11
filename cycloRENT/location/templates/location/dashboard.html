@@ -1,0 +1,184 @@
+{% extends 'location/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Overview{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- ── STATS GRID ── -->
+    <div class="row g-4 mb-5 pb-5 border-bottom border-dark border-2">
+        <div class="col-md-3">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">CA Aujourd'hui</div>
+            <div style="font-size: 3.5rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1px;">
+                {{ ca_today|floatformat:2 }} <span style="font-size: 2rem;">€</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">En cours</div>
+            <div style="font-size: 3.5rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1px;">
+                {{ nb_en_cours }}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">Vélos Dispos</div>
+            <div style="font-size: 3.5rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1px;">
+                {{ velos_disponibles }}<span style="font-size: 1.5rem; color: #999;">/{{ total_velos }}</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; font-weight: 600;">CA Ce Mois</div>
+            <div style="font-size: 3.5rem; font-family: 'Outfit', sans-serif; font-weight: 800; line-height: 1; letter-spacing: -1px;">
+                {{ ca_month|floatformat:2 }} <span style="font-size: 2rem;">€</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── REVENUE CHART ── -->
+    <div class="mb-5 pb-5 border-bottom border-dark border-2">
+        <h3 class="mb-4" style="font-family:'Outfit', sans-serif; font-weight: 800;">Revenus (7 jours)</h3>
+        <canvas id="caChart" height="80"></canvas>
+    </div>
+
+    <div class="row g-5">
+        <!-- ── ACTIVE RENTALS ── -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 style="font-family:'Outfit', sans-serif; font-weight: 800; margin: 0;">Locations Actives</h3>
+                <a href="{% url 'location_list' %}?statut=en_cours" class="btn btn-outline-primary btn-sm">Voir tout</a>
+            </div>
+            
+            {% if locations_en_cours %}
+            <div class="table-responsive">
+                <table class="loc-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Vélo</th>
+                            <th>Durée</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loc in locations_en_cours %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'client_detail' loc.client.pk %}" class="cell-client-name">{{ loc.client }}</a>
+                                <div class="cell-date-time" style="margin-top: 4px;">{{ loc.date_location|date:"d/m H:i" }}</div>
+                            </td>
+                            <td>
+                                <div class="cell-velo-model">{{ loc.velo.modele }}</div>
+                                <span class="badge-type badge-type-{{ loc.velo.type|lower }}">
+                                    <i data-lucide="{{ loc.velo.get_type_icon }}"></i>
+                                    {{ loc.velo.type }}
+                                </span>
+                            </td>
+                            <td><span class="cell-duree">{{ loc.get_duree_display_full }}</span></td>
+                            <td>
+                                <div class="action-group">
+                                    <button type="button" class="action-btn finish" title="Terminer" onclick="openConfirmModal(`Terminer la location`, `Êtes-vous sûr de vouloir terminer la location de {{ loc.client.prenom|escapejs }} ?`, `{% url 'location_terminer' loc.pk %}`, `Terminer`, `btn-success`)">
+                                        <i data-lucide="check-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i data-lucide="check-circle" class="text-success" style="opacity: 0.5; width:48px; height:48px; margin-bottom:1rem;"></i>
+                <h5>Aucune location active</h5>
+                <p>Tous les vélos sont au garage.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── REVENUE BY TYPE ── -->
+        <div class="col-lg-4">
+            <h3 class="mb-4" style="font-family:'Outfit', sans-serif; font-weight: 800;">CA par Type</h3>
+            {% if type_stats %}
+                {% for ts in type_stats %}
+                <div class="d-flex align-items-center justify-content-between border-bottom border-dark py-3">
+                    <div>
+                        <div class="fw-bold" style="text-transform: uppercase;">{{ ts.velo__type }}</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">{{ ts.count }} location(s)</div>
+                    </div>
+                    <div style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">
+                        {{ ts.total|floatformat:2 }} €
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" style="padding: 2rem 0; border: none;">
+                    <p>Aucune donnée</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_data|json_script:"chart-data" }}
+<script>
+// Chart uses sharp black lines for the minimal aesthetic
+const ctx = document.getElementById('caChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: JSON.parse(document.getElementById('chart-labels').textContent),
+        datasets: [{
+            label: 'CA (€)',
+            data: JSON.parse(document.getElementById('chart-data').textContent),
+            backgroundColor: 'transparent',
+            borderColor: '#000000',
+            borderWidth: 4,
+            pointBackgroundColor: '#000000',
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            tension: 0 /* Sharp lines */
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#000',
+                titleFont: { family: 'Outfit', size: 14 },
+                bodyFont: { family: 'Outfit', size: 16, weight: 'bold' },
+                padding: 12,
+                cornerRadius: 0,
+                boxPadding: 6,
+                callbacks: {
+                    labelColor: function(context) {
+                        return {
+                            borderColor: '#ffffff',
+                            backgroundColor: '#000000',
+                            borderWidth: 2
+                        };
+                    },
+                    label: ctx => `${ctx.parsed.y.toFixed(2)} €`
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                suggestedMax: 50,
+                ticks: { font: { family: 'Inter', weight: '600' } },
+                grid: { color: '#eaeaea', drawBorder: false }
+            },
+            x: { 
+                ticks: { font: { family: 'Inter', weight: '600' } },
+                grid: { display: false } 
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
