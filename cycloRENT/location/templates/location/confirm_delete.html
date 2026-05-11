@@ -1,0 +1,33 @@
+{% extends 'location/base.html' %}
+{% block title %}Confirmer la suppression{% endblock %}
+{% block page_title %}Confirmer la suppression{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-lg-5">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i data-lucide="alert-triangle" class="me-2"></i>Confirmer la suppression
+            </div>
+            <div class="card-body p-4 text-center">
+                <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
+                <h5 class="fw-700">Êtes-vous sûr ?</h5>
+                <p class="text-muted">Vous êtes sur le point de supprimer ce(tte) <strong>{{ type }}</strong> :</p>
+                <div class="alert alert-warning">
+                    <strong>{{ object }}</strong>
+                </div>
+                <p class="text-danger small"><i data-lucide="alert-circle" class="me-1"></i>Cette action est <strong>irréversible</strong>.</p>
+                <form method="post" class="d-flex gap-2 justify-content-center mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i data-lucide="trash" class="me-2"></i>Supprimer définitivement
+                    </button>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary px-4">
+                        <i data-lucide="arrow-left" class="me-2"></i>Annuler
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
